@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DBox NFT Interaction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .nft-list {
+            margin-top: 20px;
+        }
+        .nft-item {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Interact with DBox NFTs</h1>
+
+<!-- Upload file to mint NFT -->
+<h2>Upload and Mint NFT</h2>
+<form id="uploadForm" enctype="multipart/form-data">
+    <div class="form-group">
+        <label for="file">Upload File:</label>
+        <input type="file" id="file" name="file" required>
+    </div>
+    <button type="submit">Upload and Mint NFT</button>
+</form>
+
+<div id="uploadResult"></div>
+
+<!-- Mint NFT using IPFS Hash -->
+<h2>Mint NFT from IPFS Hash</h2>
+<form id="mintForm">
+    <div class="form-group">
+        <label for="ipfs_hash">IPFS Hash:</label>
+        <input type="text" id="ipfs_hash" name="ipfs_hash" required>
+    </div>
+    <div class="form-group">
+        <label for="owner_address">Owner Address:</label>
+        <input type="text" id="owner_address" name="owner_address" required>
+    </div>
+    <button type="submit">Mint NFT</button>
+</form>
+
+<div id="mintResult"></div>
+
+<!-- Transfer NFT -->
+<h2>Transfer NFT</h2>
+<form id="transferForm">
+    <div class="form-group">
+        <label for="from_address">From Address:</label>
+        <input type="text" id="from_address" name="from_address" required>
+    </div>
+    <div class="form-group">
+        <label for="to_address">To Address:</label>
+        <input type="text" id="to_address" name="to_address" required>
+    </div>
+    <div class="form-group">
+        <label for="token_id">Token ID:</label>
+        <input type="text" id="token_id" name="token_id" required>
+    </div>
+    <button type="submit">Transfer NFT</button>
+</form>
+
+<div id="transferResult"></div>
+
+<!-- View NFTs owned by a user -->
+<h2>View NFTs</h2>
+<form id="viewForm">
+    <div class="form-group">
+        <label for="owner_view_address">Owner Address:</label>
+        <input type="text" id="owner_view_address" name="owner_view_address" required>
+    </div>
+    <button type="submit">View NFTs</button>
+</form>
+
+<div id="viewResult"></div>
+
+<script>
+    // Handle file upload and minting
+    document.getElementById('uploadForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData();
+        const file = document.getElementById('file').files[0];
+        formData.append('file', file);
+
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('uploadResult').innerText = `File uploaded and minted. IPFS Hash: ${data.ipfs_hash}`;
+            } else {
+                document.getElementById('uploadResult').innerText = 'Failed to upload and mint NFT.';
+            }
+        });
+    });
+
+    // Handle minting from IPFS hash
+    document.getElementById('mintForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('ipfs_hash', document.getElementById('ipfs_hash').value);
+        formData.append('owner_address', document.getElementById('owner_address').value);
+
+        fetch('/mint', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('mintResult').innerText = `NFT minted. Transaction Hash: ${data.txn_hash}`;
+            } else {
+                document.getElementById('mintResult').innerText = 'Failed to mint NFT.';
+            }
+        });
+    });
+
+    // Handle transferring NFTs
+    document.getElementById('transferForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('from_address', document.getElementById('from_address').value);
+        formData.append('to_address', document.getElementById('to_address').value);
+        formData.append('token_id', document.getElementById('token_id').value);
+
+        fetch('/transfer', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('transferResult').innerText = `NFT transferred. Transaction Hash: ${data.txn_hash}`;
+            } else {
+                document.getElementById('transferResult').innerText = 'Failed to transfer NFT.';
+            }
+        });
+    });
+
+    // Handle viewing NFTs
+    document.getElementById('viewForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const ownerAddress = document.getElementById('owner_view_address').value;
+
+        fetch(`/view_nfts?owner_address=${ownerAddress}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.nfts && data.nfts.length > 0) {
+                const nftList = data.nfts.map(nft => `<div class="nft-item">Token ID: ${nft.token_id}, URI: ${nft.token_uri}</div>`).join('');
+                document.getElementById('viewResult').innerHTML = `<div class="nft-list">${nftList}</div>`;
+            } else {
+                document.getElementById('viewResult').innerText = 'No NFTs found for this user.';
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

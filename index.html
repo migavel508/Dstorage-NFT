@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decentralized File Upload and NFT Minting</title>
+    <script>
+        // Function to upload a file
+        async function uploadFile() {
+            let fileInput = document.getElementById('fileInput');
+            let formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                document.getElementById('uploadStatus').innerHTML = 'File uploaded and encrypted successfully!';
+                document.getElementById('ipfsHash').value = result.ipfs_hash;
+            } else {
+                document.getElementById('uploadStatus').innerHTML = 'File upload failed!';
+            }
+        }
+
+        // Function to mint an NFT
+        async function mintNFT() {
+            let ipfsHash = document.getElementById('ipfsHash').value;
+            let ownerAddress = document.getElementById('ownerAddress').value;
+
+            let formData = new FormData();
+            formData.append('ipfs_hash', ipfsHash);
+
+            const response = await fetch('/mint', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                document.getElementById('mintStatus').innerHTML = 'NFT minted successfully!';
+            } else {
+                document.getElementById('mintStatus').innerHTML = 'Failed to mint NFT!';
+            }
+        }
+
+        // Function to view owned NFTs
+        async function viewNFTs() {
+            let ownerAddress = document.getElementById('viewOwnerAddress').value;
+
+            const response = await fetch(`/view_nfts?owner_address=${ownerAddress}`);
+            const result = await response.json();
+
+            if (result.success) {
+                let nftList = document.getElementById('nftList');
+                nftList.innerHTML = '';
+                result.nfts.forEach(nft => {
+                    nftList.innerHTML += `<li>Token ID: ${nft.token_id} - <a href="${nft.token_uri}" target="_blank">View on IPFS</a></li>`;
+                });
+            } else {
+                document.getElementById('nftList').innerHTML = 'Failed to retrieve NFTs!';
+            }
+        }
+
+        // Function to view/decrypt a file from IPFS
+        async function viewFile() {
+            let ipfsHash = document.getElementById('fileIpfsHash').value;
+
+            const response = await fetch(`/view_file/${ipfsHash}`);
+            if (response.status === 200) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `decrypted_file_${ipfsHash}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.getElementById('viewFileStatus').innerHTML = 'File decrypted and ready for download!';
+            } else {
+                document.getElementById('viewFileStatus').innerHTML = 'Failed to download or decrypt file!';
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <h1>Decentralized File Upload and NFT Minting</h1>
+
+    <!-- File Upload Section -->
+    <h2>Upload and Encrypt File</h2>
+    <input type="file" id="fileInput"><br><br>
+    <button onclick="uploadFile()">Upload File</button><br>
+    <p id="uploadStatus"></p>
+
+    <!-- Mint NFT Section -->
+    <h2>Mint NFT</h2>
+    <label for="ownerAddress">Owner Address:</label>
+    <input type="text" id="ownerAddress" placeholder="Enter owner address"><br><br>
+    <input type="hidden" id="ipfsHash">
+    <button onclick="mintNFT()">Mint NFT</button><br>
+    <p id="mintStatus"></p>
+
+    <!-- View Owned NFTs Section -->
+    <h2>View Owned NFTs</h2>
+    <label for="viewOwnerAddress">Owner Address:</label>
+    <input type="text" id="viewOwnerAddress" placeholder="Enter owner address"><br><br>
+    <button onclick="viewNFTs()">View NFTs</button><br>
+    <ul id="nftList"></ul>
+
+    <!-- View/Decrypt File Section -->
+    <h2>View and Decrypt File from IPFS</h2>
+    <label for="fileIpfsHash">IPFS Hash:</label>
+    <input type="text" id="fileIpfsHash" placeholder="Enter IPFS hash of the file"><br><br>
+    <button onclick="viewFile()">View/Decrypt File</button><br>
+    <p id="viewFileStatus"></p>
+
+</body>
+</html>
